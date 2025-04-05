@@ -1,0 +1,25 @@
+runtime: python39
+service: voice-transcription-summary
+
+instance_class: F2
+
+handlers:
+- url: /static
+  static_dir: static
+
+- url: /.*
+  script: auto
+
+# Environment variables should be set in App Engine's environment variables section
+# Do not commit actual API keys here
+env_variables:
+  GEMINI_API_KEY: "your_gemini_api_key_here"
+
+automatic_scaling:
+  min_idle_instances: 1
+  max_idle_instances: 2
+  min_instances: 1
+  max_instances: 5
+  target_cpu_utilization: 0.7
+  target_throughput_utilization: 0.7
+  max_concurrent_requests: 10 
