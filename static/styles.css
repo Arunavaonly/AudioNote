@@ -244,4 +244,236 @@ footer {
         opacity: 0;
     }
     
+}
+
+/* Smart Segments UI Styles */
+.segment-timeline {
+    display: flex;
+    gap: 5px;
+    margin: 15px 0;
+    flex-wrap: wrap;
+}
+
+.segment {
+    height: 10px;
+    width: 30px;
+    background-color: #ccc;
+    border-radius: 5px;
+}
+
+.segment.current {
+    background-color: var(--secondary-color);
+    animation: pulse-segment 1.5s infinite;
+}
+
+.segment.completed {
+    background-color: var(--primary-color);
+}
+
+.timer-display {
+    font-size: 1rem;
+    margin-bottom: 10px;
+    color: #555;
+}
+
+.segment-separator {
+    border-top: 1px dashed #ccc;
+    margin: 10px 0;
+    position: relative;
+}
+
+.segment-marker {
+    position: absolute;
+    top: -10px;
+    left: 0;
+    background: #f0f0f0;
+    padding: 2px 5px;
+    font-size: 0.8em;
+    color: #666;
+    border-radius: 3px;
+}
+
+.continue-button {
+    background-color: var(--secondary-color);
+    color: white;
+    border: none;
+    padding: 10px 15px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+    margin-top: 10px;
+    transition: background-color 0.3s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.continue-button i {
+    margin-right: 8px;
+}
+
+.continue-button:hover {
+    background-color: #2d9247; /* Darker shade of green */
+}
+
+/* New animation specifically for segments */
+@keyframes pulse-segment {
+    0% { opacity: 0.6; }
+    50% { opacity: 1; }
+    100% { opacity: 0.6; }
+}
+
+/* Mobile responsive adjustments for segment timeline */
+@media (max-width: 768px) {
+    .segment-timeline {
+        margin: 10px 0;
+    }
+    
+    .timer-display {
+        font-size: 0.9rem;
+    }
+}
+
+@media (max-width: 480px) {
+    .segment {
+        height: 8px;
+        width: 20px;
+    }
+}
+
+/* Add scrollable class for transcript and summary */
+.scrollable {
+    max-height: 300px;
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: var(--primary-color) var(--light-bg);
+}
+
+.scrollable::-webkit-scrollbar {
+    width: 8px;
+}
+
+.scrollable::-webkit-scrollbar-track {
+    background: var(--light-bg);
+    border-radius: 4px;
+}
+
+.scrollable::-webkit-scrollbar-thumb {
+    background-color: var(--primary-color);
+    border-radius: 4px;
+}
+
+/* Timer container styling */
+.timer-container {
+    margin-top: 15px;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 5px;
+}
+
+.timer-display {
+    font-size: 1.2rem;
+    font-weight: 500;
+    color: var(--text-color);
+    background-color: white;
+    padding: 8px 15px;
+    border-radius: 20px;
+    box-shadow: var(--shadow);
+    margin-bottom: 5px;
+}
+
+/* Recording action buttons */
+.recording-actions {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    margin-top: 15px;
+}
+
+.action-btn {
+    padding: 10px 20px;
+    font-size: 14px;
+    border-radius: 20px;
+}
+
+.pause-btn {
+    background-color: var(--error-color);
+}
+
+.pause-btn:hover {
+    background-color: #d33426;
+}
+
+.continue-btn {
+    background-color: var(--secondary-color);
+}
+
+.continue-btn:hover {
+    background-color: #2d9247;
+}
+
+/* Update segment timeline to be centered */
+#recording-controls {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin: 10px 0 20px;
+}
+
+.segment-timeline {
+    display: flex;
+    gap: 5px;
+    margin: 10px 0;
+    flex-wrap: wrap;
+    justify-content: center;
+    max-width: 600px;
+}
+
+/* Style for auto-paused notification */
+.auto-paused {
+    color: var(--error-color);
+    font-weight: 500;
+    animation: fadeIn 0.5s;
+}
+
+/* Mobile adjustments */
+@media (max-width: 768px) {
+    .recording-actions {
+        flex-direction: column;
+        gap: 10px;
+    }
+    
+    .action-btn {
+        width: 100%;
+    }
+}
+
+/* No speech detected message styling */
+.no-speech-message {
+    display: flex;
+    align-items: center;
+    padding: 12px 15px;
+    margin: 10px 0;
+    background-color: #fff8e1;
+    border-left: 4px solid #ffc107;
+    border-radius: 4px;
+    color: #856404;
+    font-size: 14px;
+}
+
+.no-speech-message i {
+    font-size: 18px;
+    margin-right: 10px;
+}
+
+/* Animation for no speech message */
+@keyframes highlightWarning {
+    0% { background-color: #fff8e1; }
+    50% { background-color: #fff3cd; }
+    100% { background-color: #fff8e1; }
+}
+
+.no-speech-message {
+    animation: highlightWarning 2s ease-in-out;
 } 

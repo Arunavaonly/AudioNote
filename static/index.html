@@ -20,20 +20,43 @@
                     <i class="fas fa-microphone"></i>
                     <span>Start Recording</span>
                 </button>
-                <div id="recordingStatus" class="status hidden">Recording...</div>
+                
+                <!-- Timer display moved below record button -->
+                <div class="timer-container">
+                    <div class="timer-display">
+                        <span id="segmentTime">00:00</span> / <span id="totalTime">00:00</span>
+                    </div>
+                    <div id="timerStatus" class="status hidden">Recording...</div>
+                </div>
+                
                 <div id="processingStatus" class="status hidden">Processing...</div>
                 <div id="errorMessage" class="error-message hidden"></div>
+            </div>
+
+            <!-- Timeline visualization -->
+            <div id="recording-controls">
+                <div id="segmentTimeline" class="segment-timeline"></div>
             </div>
 
             <div class="results-container">
                 <div class="result-box">
                     <h2>Transcription</h2>
-                    <div id="transcriptionResult" class="result-content">Your transcription will appear here</div>
+                    <div id="transcriptionResult" class="result-content scrollable">Your transcription will appear here</div>
+                    
+                    <!-- Recording control buttons below transcript -->
+                    <div class="recording-actions">
+                        <button id="pauseButton" class="btn action-btn pause-btn hidden">
+                            <i class="fas fa-pause"></i> Pause
+                        </button>
+                        <button id="continueButton" class="btn action-btn continue-btn hidden">
+                            <i class="fas fa-play"></i> Continue Recording
+                        </button>
+                    </div>
                 </div>
                 
                 <div class="result-box">
                     <h2>Summary</h2>
-                    <div id="summaryResult" class="result-content">Your summary will appear here</div>
+                    <div id="summaryResult" class="result-content scrollable">Your summary will appear here</div>
                     <div id="summaryControls" class="result-controls"></div>
                 </div>
             </div>

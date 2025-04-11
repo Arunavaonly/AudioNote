@@ -64,9 +64,14 @@ def processAudio():
                 api_key= HF_API_KEY  # Ensure correct env var name
             )
 
-            output = client.automatic_speech_recognition(audio_bytes, model="openai/whisper-large-v3")
+            print(f"Transcribing audio bytes...")
+            
+            output = client.automatic_speech_recognition(
+                audio_bytes, 
+                model="openai/whisper-large-v3",
+            )
             transcript_text = output.get('text', '').strip()
-            print(output)
+            print(f"Raw Output: {output}")
             print(f"Processed Transcript: {transcript_text}")
 
             if not transcript_text:
@@ -74,21 +79,11 @@ def processAudio():
                  response_payload = {"transcript": "", "summary": "No text transcribed to summarize."}
             else:
                  response_payload = {"transcript": transcript_text}
-                 print("Summarizing transcript...")
-                 gemini_client = genai.Client(api_key=API_KEY)
-                 gen_response = gemini_client.models.generate_content(
-                     model="gemini-1.5-flash", # Or your preferred model
-                     contents=["Summarize the following text. Text: " + transcript_text],
-                 )
-                 summary = gen_response.text or "Sorry, I couldn't generate a summary."
-                 response_payload["summary"] = summary
-                 print("Summarization complete.")
-
             # No finally block needed here for file cleanup anymore
             
         except Exception as inner_e:
             # Log the inner exception for debugging
-            app.logger.exception(f"Error during ASR/Summarization: {str(inner_e)}")
+            app.logger.exception(f"Error during ASR: {str(inner_e)}")
             return jsonify({"error": f"Failed during processing: {str(inner_e)}"}), 500
 
         return jsonify(response_payload)
@@ -97,6 +92,36 @@ def processAudio():
         # Log the outer exception (e.g., reading file failed)
         app.logger.exception(f"Error processing audio request: {str(outer_e)}")
         return jsonify({"error": f"Failed to process audio request: {str(outer_e)}"}), 500
+    
+
+@app.route('/summarize', methods=['POST', 'OPTIONS'])
+def summarize():
+    try:
+        if request.method == 'OPTIONS':
+            return app.make_default_options_response()
+        
+        data = request.json
+        transcript = data.get('transcript')
+
+        if not transcript:
+            return jsonify({"error": "No transcript provided"}), 400    
+        
+        # Initialize the Gemini  client               
+        gemini_client = genai.Client(api_key=API_KEY)
+        gen_response = gemini_client.models.generate_content(
+                     model="gemini-1.5-flash", # Or your preferred model
+                     contents=["Summarize the following text. Text: " + transcript]
+                 )
+        summary = gen_response.text or "Sorry, I couldn't generate a summary."
+                 
+        print(f"Summarization complete. Summary: {summary}")
+
+        return jsonify({"summary": summary})
+    
+    except Exception as e:
+        app.logger.exception(f"Error during summarization: {str(e)}")
+        return jsonify({"error": f"Failed to summarize: {str(e)}"}), 500
+
 
 
 if __name__ == '__main__':
