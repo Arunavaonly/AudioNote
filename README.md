@@ -1,51 +1,71 @@
-# Voice Transcription and Summarization App
+# AudioNote: Voice Transcription and Summarization App
+AudioNote is a full-stack web application that allows users to record audio directly from their browser, transcribe the recorded audio using OpenAI’s Whisper, and then generate a summary of the transcription using Google Gemini AI. In addition, users can manage their notes by saving and viewing summarized content. The app offers a responsive design that works seamlessly on both desktop and mobile devices.
 
-A web application that transcribes voice input from the user's microphone in real-time and provides a summary using Gemini AI.
+## Overview
+
+- **Voice Recording:**  
+  Users can record their voice with an intuitive interface. The browser captures audio and passes it to the backend for processing.
+  
+- **Transcription:**  
+  The recorded audio is processed using OpenAI’s Whisper model for high-quality transcription, ensuring that your speech is accurately converted to text.
+  
+- **AI-Powered Summarization:**  
+  Once the transcription is complete, the application leverages Google Gemini AI to generate a concise and coherent summary of the recorded content.
+  
+- **Note Management:**  
+  After summarization, users have the option to save the summary as a note. These notes are stored locally and can be viewed, managed, or deleted, allowing for easy organization and retrieval.
+  
+- **User Interface:**  
+  The frontend is built using HTML, CSS, and JavaScript. It provides real-time feedback during recording, visualizes audio segments, and clearly displays both the transcript and summary.
 
 ## Features
 
-- Real-time voice recording and transcription directly in the browser
-- Client-side speech recognition using the Web Speech API
-- Summarization of transcribed text using Gemini AI
-- Responsive design that works on both desktop and mobile devices
-- Clean, modern UI with intuitive controls
+- **Real-time voice recording** directly from the browser.
+- **Accurate transcription** using OpenAI’s Whisper.
+- **AI-powered summarization** with Google Gemini AI.
+- **Local note management** for saving and retrieving important summaries.
+- **Responsive design** ensuring optimal use on all devices.
+- **Segmented recording sessions** that allow for longer recordings by auto-splitting audio.
 
-## Prerequisites
+## Technology Stack
 
-- Python 3.9 or higher
-- Flask
-- Google AI Python SDK
-- Google Cloud Platform account (for deployment)
+- **Frontend:** HTML, CSS, JavaScript.
+- **Backend:** Python with Flask.
+- **Transcription Engine:** OpenAI Whisper.
+- **Summarization Engine:** Google Gemini AI.
+- **Note Storage:** Local storage for managing notes.
 
 ## Installation
 
 1. Clone this repository:
-   ```
+   ```bash
    git clone <repository-url>
    cd <repository-directory>
    ```
 
-2. Install the required dependencies:
+2. Set up a virtual environment:
+   ```bash
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
    ```
+
+3. Install the required dependencies:
+   ```bash
    pip install -r requirements.txt
    ```
 
-3. Set up environment variables:
-   - Copy `.env.example` to `.env`:
+4. Set up environment variables:
+   - Create a `.env` file in the root directory.
+   - Add:
+     ```env
+     GEMINI_API_KEY=<your_google_gemini_api_key>
+     HF_API_KEY=<your_huggingface_api_key>
      ```
-     cp .env.example .env
-     ```
-   - Update the `.env` file with your Gemini API key
-   - Copy `app.yaml.example` to `app.yaml`:
-     ```
-     cp app.yaml.example app.yaml
-     ```
-   - Update the `app.yaml` file with your App Engine configuration
 
 ## Running Locally
 
 1. Start the Flask server:
-   ```
+   ```bash
    python main.py
    ```
 
@@ -54,60 +74,32 @@ A web application that transcribes voice input from the user's microphone in rea
    http://localhost:5000
    ```
 
-3. Grant microphone permissions when prompted.
+3. Grant microphone permissions when prompted, then record audio, transcribe, summarize, and manage your notes seamlessly!
 
-4. Click the "Start Recording" button and speak into your microphone.
+## Project Structure
 
-5. Click "Stop Recording" when you're done, and wait for the summary to be generated.
+- **`main.py`**: Backend server that handles audio processing, transcription, and summarization.
+- **`static/`**: Contains the frontend files.
+  - `index.html`: Main user interface.
+  - `styles.css`: Styling for a responsive, modern look.
+  - `app.js`: Frontend logic handling recording, transcription processing, summary generation, and note management.
+- **`requirements.txt`**: Python dependencies required for running the application.
 
-## Deploying to Google Cloud App Engine
+## API Endpoints
 
-1. Make sure you have the Google Cloud SDK installed and initialized.
+- **`POST /processAudio`**: Accepts audio files and returns the transcription.
+- **`POST /summarize`**: Accepts transcriptions and returns a generated summary.
 
-2. Set up environment variables in App Engine:
-   - Go to the App Engine dashboard
-   - Navigate to Settings > Environment Variables
-   - Add your `GEMINI_API_KEY` and other environment variables
+## Deployment
 
-3. Deploy the application:
-   ```
-   gcloud app deploy app.yaml
-   ```
-
-4. Access your deployed application:
-   ```
-   gcloud app browse -s voice-transcription-summary
-   ```
-
-## Environment Variables
-
-The following environment variables are required:
-
-- `GEMINI_API_KEY`: Your Google Gemini API key
-- `FLASK_ENV`: Development environment (development/production)
-- `FLASK_DEBUG`: Debug mode (1/0)
-- `PORT`: Server port (default: 5000)
-
-## Mobile App Considerations
-
-The current web application is designed to be responsive and mobile-friendly. To convert it to a native mobile app, you could use:
-
-- **Progressive Web App (PWA)**: Add a manifest.json file and service workers to make the web app installable on mobile devices.
-- **Hybrid App Framework**: Use Capacitor or Cordova to wrap the web app into a native container.
-- **React Native**: Rebuild the UI using React Native while keeping the same API communication.
-
-## Security Notes
-
-- Never commit API keys or sensitive information to version control
-- Use environment variables for all sensitive data
-- Keep your `.env` and `app.yaml` files local and secure
-- Use App Engine's environment variables for production deployment
+Deploy the Flask application on platforms supporting Python (e.g., Google Cloud App Engine). Configure environment variables on your hosting service as specified above.
 
 ## License
 
-MIT
+This project is licensed under the MIT License.
 
 ## Acknowledgements
 
-- Google Gemini AI for text summarization
-- Web Speech API for voice recognition 
+- OpenAI Whisper for transcription.
+- Google Gemini AI for summarization.
+- Thanks to the developers and contributors who helped build this project.
