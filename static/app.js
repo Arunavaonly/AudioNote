@@ -1,10 +1,11 @@
 document.addEventListener('DOMContentLoaded', () => {
+    recreateNotesFromStorage();
     const script = document.createElement('script');
 
 
         // DOM elements
         const recordButton = document.getElementById('recordButton');
-        const recordButtonText = recordButton.querySelector('span');
+        //const recordButtonText = recordButton.querySelector('span');
         const recordButtonIcon = recordButton.querySelector('i');
         const processingStatus = document.getElementById('processingStatus');
         const errorMessage = document.getElementById('errorMessage');
@@ -19,6 +20,12 @@ document.addEventListener('DOMContentLoaded', () => {
         const continueButton = document.getElementById('continueButton');
         const pauseButton = document.getElementById('pauseButton');
         const timerStatus = document.getElementById('timerStatus');
+        const noteButton = document.getElementById('noteButton');
+        const notes = document.getElementById('notes');
+        const noteContent = document.getElementById('note-content');
+
+        window.noteContent = noteContent;
+
         
         // API base URL logic
         const API_BASE_URL = (() => {
@@ -49,12 +56,54 @@ document.addEventListener('DOMContentLoaded', () => {
         let segmentTimer = null;
         let accumulatedTranscript = ""; // Store transcript across segments in client memory
         let segmentStream = null; // Store the media stream for reuse
+        let summary =""; // Store the summary
         
         // Bind click events
         recordButton.addEventListener('click', toggleRecording);
         continueButton.addEventListener('click', continueRecording);
         pauseButton.addEventListener('click', pauseRecording);
+        noteButton.addEventListener('click', createNote);
       
+        
+        function recreateNotesFromStorage() {
+            const notesContainer = document.getElementById('notes');
+            
+            if (localStorage.length === 0) return; // No notes to display
+            // Gather all keys that start with "note"
+
+            const noteKeys = [];
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                if (key.startsWith("note")) {
+                    noteKeys.push(key);
+                }
+            }
+            
+            // Sort keys in descending order by extracting the numeric part
+            noteKeys.sort((a, b) => {
+                const noteNumA = parseInt(a.replace("note", ""), 10);
+                const noteNumB = parseInt(b.replace("note", ""), 10);
+                return noteNumA - noteNumB;
+            });
+            
+            // Clear the container first if needed
+            notesContainer.innerHTML = '';
+            
+            // Loop over the sorted keys and create note elements
+            noteKeys.forEach(key => {
+                const noteNumber = key.replace("note", "");
+                
+                const noteElement = document.createElement('div');
+                noteElement.className = 'note';
+                noteElement.innerHTML = `
+                    <div class="show-note" onclick="showNote(${noteNumber})">Note ${noteNumber}</div>
+                    <div class="note-controls">
+                        <button class="delete-note" onclick="deleteNote(${noteNumber})">Delete</button>
+                    </div>
+                `;
+                notesContainer.appendChild(noteElement);
+            });
+        }        
         // Toggle recording
         function toggleRecording() {
             if (recordButton.hasAttribute('data-processing')) return;
@@ -80,7 +129,10 @@ document.addEventListener('DOMContentLoaded', () => {
             stopRecording(true); // true = auto/manual segment, not final stop
             
             // Update UI to show paused state
-            recordButtonText.textContent = 'Recording Paused';
+            recordButton.textContent = 'Recording Paused';
+            recordButton.disabled = true;
+            recordButtonIcon.classList.replace('fa-microphone','fa-pause');
+
             pauseButton.classList.add('hidden');
             continueButton.classList.remove('hidden');
         }
@@ -88,6 +140,10 @@ document.addEventListener('DOMContentLoaded', () => {
         // Continue recording after auto-pause or manual pause
         function continueRecording() {
             continueButton.classList.add('hidden');
+            recordButton.textContent = 'Stop Recording';
+            recordButton.disabled = false;
+            recordButtonIcon.classList.replace('fa-pause','fa-microphone');
+            
             
             // Clear auto-paused message if present
             if (timerStatus.classList.contains('auto-paused')) {
@@ -248,6 +304,7 @@ document.addEventListener('DOMContentLoaded', () => {
         function stopRecording(isAutoSegment = false) {
             if (mediaRecorder && mediaRecorder.state === 'recording') {
                 // If auto segment, increment count and update UI
+                
                 if (isAutoSegment) {
                     segmentCount++;
                     updateSegmentTimeline();
@@ -293,6 +350,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // Hide action buttons
             pauseButton.classList.add('hidden');
             continueButton.classList.add('hidden');
+
             
             // Reset UI
             updateSegmentTimeline();
@@ -351,18 +409,28 @@ document.addEventListener('DOMContentLoaded', () => {
         function updateUIForRecording(on) {
             if (on) {
                 recordButton.classList.add('recording');
-                recordButtonText.textContent = 'Stop Recording';
+                recordButton.textContent = 'Stop Recording';
                 recordButtonIcon.classList.replace('fa-microphone','fa-stop');
                 timerStatus.classList.remove('hidden');
                 timerStatus.textContent = 'Recording...';
+                recordButton.disabled = false;
                 updateSegmentTimeline();
             } else {
                 recordButton.classList.remove('recording');
-                recordButtonText.textContent = 'Start Recording';
+                recordButton.textContent = 'Start Recording';
                 recordButtonIcon.classList.replace('fa-stop','fa-microphone');
                 timerStatus.classList.add('hidden');
                 
-                // Don't hide timer status here - it might show the auto-paused message
+                // If we're paused, keep the button disabled with paused text;
+                // Otherwise, reset to "Start Recording"
+                if (isPaused) {
+                    recordButton.textContent = 'Recording Paused';
+                    recordButton.disabled = true;
+                } else {
+                    recordButton.textContent = 'Start Recording';
+                    recordButton.disabled = false;
+        }
+
             }
         }
         
@@ -437,13 +505,16 @@ document.addEventListener('DOMContentLoaded', () => {
                             const summary_data = await summary_response.json();
                             console.log(summary_data);
 
+                            summary = summary_data.summary;
+
                             if (segmentCount > 0) {
                                 // This was a multi-segment recording that's now complete
                                 // Use the accumulated transcript + final segment
-                                
+                                console.log("Finalizing multi-segment recording...");
                                 processData(accumulatedTranscript, summary_data.summary);
                             } else {
                                 // Normal single-segment processing
+                                console.log("Finalizing single-segment recording...");
                                 processData(transcript, summary_data.summary);
                             }
                             
@@ -477,7 +548,7 @@ document.addEventListener('DOMContentLoaded', () => {
             // If transcript matches any of these patterns, consider as no speech
             for (const pattern of noSpeechPatterns) {
                 if (pattern.test(transcript.trim())) {
-                    console.log(`No speech detected (matched pattern): "${transcript}"`);
+                    console.log(`No speech detected (matched pattern): "${accumulatedTranscript}"`);
                     return true;
                 }
             }
@@ -524,6 +595,60 @@ document.addEventListener('DOMContentLoaded', () => {
                 transcriptionResult.appendChild(noSpeechElement);
             }
         }
+
+        // Create a note from the summary
+
+        function createNote() {
+            const notenumber = localStorage.length +1;
+            localStorage.setItem('note' + notenumber, summary); // Store the note in session storage
+            console.log(localStorage.getItem('note' + notenumber));
+            noteButton.classList.add('hidden');
+
+
+            const noteElement = document.createElement('div');
+            noteElement.className = 'note';
+            noteElement.id = 'noteElement';
+            noteElement.innerHTML = `
+            <div class="show-note" onclick="showNote(${notenumber})">Note ${notenumber}</div>
+            <div class="note-controls">
+             <button class="delete-note" onclick="deleteNote(${notenumber})">Delete</button>
+            </div>
+        `;
+            notes.appendChild(noteElement);
+        }
+
+        function deleteNote(noteNumber) {
+            // Remove the note from local storage
+            localStorage.removeItem('note' + noteNumber);
+            console.log(`Note ${noteNumber} deleted`);
+
+            // Remove the note element from the UI
+            const noteElement = document.querySelector(`#notes .note:nth-child(${noteNumber})`);
+            if (noteElement) {
+                noteElement.remove();
+            }
+        }
+
+        window.deleteNote = deleteNote;
+
+
+
+        function showNote(noteNumber) {
+            // Retrieve the note from session storage using the note number
+            const noteData = localStorage.getItem('note' + noteNumber);
+            
+            // Display the note in a modal or alert (for simplicity, using alert here)
+            if (noteData) {
+                noteContent.textContent = noteData;
+            } else {
+                noteContent.textContent = `No note found for Note ${noteNumber}`;
+            }
+
+        };
+
+        // Expose showNote globally, so inline event handlers can access it
+        window.showNote = showNote;
+
       
         // Display response in UI
         function processData(transcript, summary) {
@@ -563,6 +688,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     p.textContent = segment;
                     summaryResult.appendChild(p);
                 });
+                 noteButton.classList.remove('hidden');
             }
         }
 
