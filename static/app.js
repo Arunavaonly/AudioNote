@@ -5,7 +5,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // DOM elements
         const recordButton = document.getElementById('recordButton');
-        //const recordButtonText = recordButton.querySelector('span');
         const recordButtonIcon = recordButton.querySelector('i');
         const processingStatus = document.getElementById('processingStatus');
         const errorMessage = document.getElementById('errorMessage');
@@ -67,10 +66,7 @@ document.addEventListener('DOMContentLoaded', () => {
         
         function recreateNotesFromStorage() {
             const notesContainer = document.getElementById('notes');
-            
-            if (localStorage.length === 0) return; // No notes to display
-            // Gather all keys that start with "note"
-
+        
             const noteKeys = [];
             for (let i = 0; i < localStorage.length; i++) {
                 const key = localStorage.key(i);
@@ -79,31 +75,29 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             }
             
-            // Sort keys in descending order by extracting the numeric part
-            noteKeys.sort((a, b) => {
-                const noteNumA = parseInt(a.replace("note", ""), 10);
-                const noteNumB = parseInt(b.replace("note", ""), 10);
-                return noteNumA - noteNumB;
-            });
+            // Sort keys lexicographically (works since keys are note + timestamp)
+            noteKeys.sort();
             
-            // Clear the container first if needed
+            // Clear the container first
             notesContainer.innerHTML = '';
             
-            // Loop over the sorted keys and create note elements
+            // Loop over the sorted keys and create note elements using a unique noteId
             noteKeys.forEach(key => {
-                const noteNumber = key.replace("note", "");
-                
+                // Extract the unique noteId (remove the "note" prefix)
+                const noteId = key.substring(4);
                 const noteElement = document.createElement('div');
                 noteElement.className = 'note';
+                noteElement.id = key;
                 noteElement.innerHTML = `
-                    <div class="show-note" onclick="showNote(${noteNumber})">Note ${noteNumber}</div>
+                    <div class="show-note" onclick="showNote('${noteId}')">Note ${noteId}</div>
                     <div class="note-controls">
-                        <button class="delete-note" onclick="deleteNote(${noteNumber})">Delete</button>
+                        <button class="delete-note" onclick="deleteNote('${noteId}')">Delete</button>
                     </div>
                 `;
                 notesContainer.appendChild(noteElement);
             });
-        }        
+        }
+              
         // Toggle recording
         function toggleRecording() {
             if (recordButton.hasAttribute('data-processing')) return;
@@ -222,7 +216,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 mediaRecorder.ondataavailable = (event) => {
                     if (event.data && event.data.size > 0) {
                         recordedChunks.push(event.data);
-                        console.log(`Recorded chunk size: ${event.data.size}`);
                     } else {
                         console.log("Received empty data chunk.");
                     }
@@ -231,10 +224,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 mediaRecorder.start(); // Start recording AFTER handlers are set
                 
                 mediaRecorder.onstart = () => {
-                    console.log("Recording started");
                     // Set a timeout to stop recording at 28 seconds (just under 30s limit)
                     recordingTimer = setTimeout(() => {
-                        console.log("Segment limit reached. Auto-stopping.");
                         
                         // Show auto-paused message
                         timerStatus.textContent = 'Auto-paused after 28 seconds';
@@ -319,7 +310,6 @@ document.addEventListener('DOMContentLoaded', () => {
                 
                 mediaRecorder.stop(); // This will trigger the onstop event handler
             } else {
-                console.log("Stop called but recorder not active.");
                 // Cleanup timers
                 if (recordingTimer) {
                     clearTimeout(recordingTimer);
@@ -468,57 +458,48 @@ document.addEventListener('DOMContentLoaded', () => {
                 if (data.error) {
                     showErrorMessage(data.error);
                 } else {
-                    // Check if the transcript contains no meaningful speech
-                    const transcript = data.transcript;
-                    if (hasNoSpeech(transcript)) {
+                    const currentTranscript = data.transcript;
+
+                    // If no speech was detected in the current segment and no previous speech exists
+                    if (hasNoSpeech(currentTranscript) && accumulatedTranscript.trim() === "") {
                         showNoSpeechMessage();
-                        // If this is not part of a long recording session, reset
                         if (!isLongRecordingSession && !isPaused) {
                             resetRecordingSession();
                         }
                     } else {
-                        // If this is part of a long recording session
+                        // Append current transcript only if it contains meaningful speech
+                        if (!hasNoSpeech(currentTranscript)) {
+                            accumulatedTranscript += (accumulatedTranscript ? " " : "") + currentTranscript;
+                        } else {
+                            console.log("Skipped current segment with no speech; using previously accumulated transcript.");
+                        }
+
                         if (isLongRecordingSession || isPaused) {
-                            // Append the new transcript to accumulated transcript
-                            accumulatedTranscript += (accumulatedTranscript ? " " : "") + transcript;
-                            console.log(accumulatedTranscript);
-                            
-                            // Show the accumulated transcript
-                            processData(accumulatedTranscript, null); // Don't show summary yet
-                            
-                            // Show continue button if paused
+                            // In a long recording session, update UI with accumulated transcript
+                            processData(accumulatedTranscript, null); // No summary shown yet
                             if (isPaused) {
                                 continueButton.classList.remove('hidden');
                             }
                         } else {
-                            // Single recording or final segment
-                            accumulatedTranscript += (accumulatedTranscript ? " " : "") + transcript;
-                            console.log(accumulatedTranscript);
+                            // Single recording: call summarization endpoint with the accumulated transcript.
                             const summary_response = await fetch(`${API_BASE_URL}/summarize`, {
                                 method: 'POST',
                                 headers: { 
-                                    'Content-Type': 'application/json'},
-
+                                    'Content-Type': 'application/json'
+                                },
                                 body: JSON.stringify({ "transcript": accumulatedTranscript }),
                             });
 
                             const summary_data = await summary_response.json();
-                            console.log(summary_data);
-
                             summary = summary_data.summary;
 
                             if (segmentCount > 0) {
-                                // This was a multi-segment recording that's now complete
-                                // Use the accumulated transcript + final segment
-                                console.log("Finalizing multi-segment recording...");
                                 processData(accumulatedTranscript, summary_data.summary);
                             } else {
-                                // Normal single-segment processing
-                                console.log("Finalizing single-segment recording...");
-                                processData(transcript, summary_data.summary);
+                                processData(currentTranscript, summary_data.summary);
                             }
                             
-                            // Reset session data
+                            // Reset session data after finalizing
                             resetRecordingSession();
                         }
                     }
@@ -542,20 +523,20 @@ document.addEventListener('DOMContentLoaded', () => {
                 /^(\[.*\]|\(.*\))$/i,  // Just annotations in brackets or parentheses
                 /^\b(\w+)\b(?:\s+\1){4,}$/i, // Single word repeated 5+ times
                 /^(\b\w+\b(?:\s+\b\w+\b)+)(?:\s+\1){4,}$/i, // Phrase repeated 5+ times
-                /^thank you\.?$/i // "Thank you." as a regular expression
+                /^thank you\.?$/i, // "Thank you." as a regular expression
+                /^hello\.?$/i // "Hello." as a regular expression
+
             ];
             
             // If transcript matches any of these patterns, consider as no speech
             for (const pattern of noSpeechPatterns) {
                 if (pattern.test(transcript.trim())) {
-                    console.log(`No speech detected (matched pattern): "${accumulatedTranscript}"`);
                     return true;
                 }
             }
             
             // If transcript is extremely short (less than 4 meaningful characters), double-check
             if (transcript.replace(/[\s\.,\?\!\-\(\)\[\]]/g, '').length < 4) {
-                console.log(`Possible no speech (very short): "${transcript}"`);
                 return true;
             }
             
@@ -599,56 +580,41 @@ document.addEventListener('DOMContentLoaded', () => {
         // Create a note from the summary
 
         function createNote() {
-            const notenumber = localStorage.length +1;
-            localStorage.setItem('note' + notenumber, summary); // Store the note in session storage
-            console.log(localStorage.getItem('note' + notenumber));
+            // Generate a unique id for the note using the current timestamp
+            const noteId = Date.now().toString();
+            // Save the note with key "note<uniqueId>" (ensure that the variable `summary` has the intended content)
+            localStorage.setItem('note' + noteId, summary);
             noteButton.classList.add('hidden');
-
-
+        
             const noteElement = document.createElement('div');
             noteElement.className = 'note';
-            noteElement.id = 'noteElement';
+            noteElement.id = 'note' + noteId;
             noteElement.innerHTML = `
-            <div class="show-note" onclick="showNote(${notenumber})">Note ${notenumber}</div>
-            <div class="note-controls">
-             <button class="delete-note" onclick="deleteNote(${notenumber})">Delete</button>
-            </div>
-        `;
+                <div class="show-note" onclick="showNote('${noteId}')">Note ${noteId}</div>
+                <div class="note-controls">
+                    <button class="delete-note" onclick="deleteNote('${noteId}')">Delete</button>
+                </div>
+            `;
             notes.appendChild(noteElement);
         }
-
-        function deleteNote(noteNumber) {
-            // Remove the note from local storage
-            localStorage.removeItem('note' + noteNumber);
-            console.log(`Note ${noteNumber} deleted`);
-
-            // Remove the note element from the UI
-            const noteElement = document.querySelector(`#notes .note:nth-child(${noteNumber})`);
+        
+        function deleteNote(noteId) {
+            // Remove the note from localStorage and then remove the UI element
+            localStorage.removeItem('note' + noteId);
+            const noteElement = document.getElementById('note' + noteId);
             if (noteElement) {
                 noteElement.remove();
             }
         }
-
+        // Expose deleteNote globally, so inline event handlers can access it        
         window.deleteNote = deleteNote;
 
-
-
-        function showNote(noteNumber) {
-            // Retrieve the note from session storage using the note number
-            const noteData = localStorage.getItem('note' + noteNumber);
-            
-            // Display the note in a modal or alert (for simplicity, using alert here)
-            if (noteData) {
-                noteContent.textContent = noteData;
-            } else {
-                noteContent.textContent = `No note found for Note ${noteNumber}`;
-            }
-
-        };
-
+        // Show note content in the note-content div    
         // Expose showNote globally, so inline event handlers can access it
-        window.showNote = showNote;
-
+        window.showNote = function(noteId) {
+            const noteData = localStorage.getItem('note' + noteId);
+            noteContent.textContent = noteData ? noteData : `No note found for Note ${noteId}`;
+        };
       
         // Display response in UI
         function processData(transcript, summary) {

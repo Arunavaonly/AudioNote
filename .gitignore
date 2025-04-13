@@ -10,6 +10,8 @@ dist/
 downloads/
 Scrips/
 share/
+.vscode/
+.Include/
 eggs/
 .eggs/
 lib/

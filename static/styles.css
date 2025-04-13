@@ -244,6 +244,14 @@ footer {
         opacity: 0;
     }
     
+    .scrollable {
+        max-height: none; /* Remove fixed height on small screens to show full transcript */
+        overflow-y: auto;
+        -webkit-overflow-scrolling: touch; /* enhanced scrolling on mobile devices */
+        scrollbar-width: thin;
+        scrollbar-color: var(--primary-color) var(--light-bg);
+    }
+    
 }
 
 /* Smart Segments UI Styles */
@@ -343,8 +351,9 @@ footer {
 
 /* Add scrollable class for transcript and summary */
 .scrollable {
-    max-height: 300px;
+    max-height: none;
     overflow-y: auto;
+    -webkit-overflow-scrolling: touch; /* enhanced scrolling on mobile devices */
     scrollbar-width: thin;
     scrollbar-color: var(--primary-color) var(--light-bg);
 }
@@ -516,4 +525,4 @@ footer {
 
 .no-speech-message {
     animation: highlightWarning 2s ease-in-out;
-} 
+}

@@ -2,8 +2,6 @@ from flask import Flask, request, jsonify
 from flask_cors import CORS
 from google import genai
 import os
-import base64
-import json
 from dotenv import load_dotenv
 from huggingface_hub import InferenceClient
 
@@ -52,9 +50,7 @@ def processAudio():
 
         try:
             # --- Read audio file content into memory as bytes --- 
-            print("Reading audio file into memory...")
             audio_bytes = audio_file.read()
-            print(f"Read {len(audio_bytes)} bytes from audio file.")
             if not audio_bytes:
                  return jsonify({"error": "Audio file is empty"}), 400
             # --- End reading into memory ---
@@ -64,15 +60,12 @@ def processAudio():
                 api_key= HF_API_KEY  # Ensure correct env var name
             )
 
-            print(f"Transcribing audio bytes...")
             
             output = client.automatic_speech_recognition(
                 audio_bytes, 
                 model="openai/whisper-large-v3",
             )
             transcript_text = output.get('text', '').strip()
-            print(f"Raw Output: {output}")
-            print(f"Processed Transcript: {transcript_text}")
 
             if not transcript_text:
                  print("Whisper returned empty transcript.")
@@ -110,11 +103,10 @@ def summarize():
         gemini_client = genai.Client(api_key=API_KEY)
         gen_response = gemini_client.models.generate_content(
                      model="gemini-1.5-flash", # Or your preferred model
-                     contents=["Summarize the following text. Text: " + transcript]
+                     contents=["Summarize the following text. Don't explain and assume anything. Text: " + transcript]
                  )
         summary = gen_response.text or "Sorry, I couldn't generate a summary."
                  
-        print(f"Summarization complete. Summary: {summary}")
 
         return jsonify({"summary": summary})
     
